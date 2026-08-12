@@ -27,8 +27,20 @@
   .nav-inner .links{display:flex; gap:24px;}
   .nav-inner .links a{color:var(--muted); transition:color .25s;}
   .nav-inner .links a:hover{color:var(--text); text-decoration:none;}
-  .nav-inner .clock{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:13px;}
-  .nav-inner .clock strong{color:var(--text); font-weight:600;}
+  .clock-wrap{margin-left:auto; position:relative;}
+  .clock-btn{display:flex; align-items:center; gap:8px; background:var(--surface); border:0; border-radius:980px;
+    padding:6px 14px; font-size:13px; color:var(--muted); cursor:pointer; font-variant-numeric:tabular-nums;
+    transition:background .25s; font-family:inherit;}
+  .clock-btn:hover{background:#e8e8ed;}
+  .clock-btn strong{color:var(--text); font-weight:600;}
+  .clock-btn .caret{font-size:10px;}
+  .tz-menu{position:absolute; right:0; top:calc(100% + 8px); background:var(--card); border:1px solid var(--hair);
+    border-radius:14px; padding:6px; min-width:190px; box-shadow:0 10px 30px rgba(0,0,0,.08); display:none; z-index:60;}
+  .tz-menu.open{display:block;}
+  .tz-menu button{display:flex; justify-content:space-between; width:100%; background:none; border:0; border-radius:9px;
+    padding:8px 12px; font-size:13px; color:var(--text); cursor:pointer; font-family:inherit; text-align:left;}
+  .tz-menu button:hover{background:var(--surface);}
+  .tz-menu button.sel{font-weight:600; color:var(--blue);}
 
   /* ---- Sections ---- */
   section{max-width:1560px; margin:0 auto; padding:56px 22px;}
@@ -100,6 +112,20 @@
   #billList .meta{color:var(--muted); font-size:13px; margin-top:2px;}
   .err{color:#c92a2a; font-size:14px; margin-top:10px;}
 
+  /* ---- Monthly session calendar ---- */
+  .month-cal{width:100%; border-collapse:separate; border-spacing:6px; table-layout:fixed; margin-top:16px;}
+  .month-cal th{font-size:12px; color:var(--muted); font-weight:600; text-align:center; padding:4px 0 6px;}
+  .month-cal td{height:78px; vertical-align:top; border-radius:12px; background:var(--surface); padding:9px 10px;
+    font-size:14px; font-weight:600; color:var(--muted);}
+  .month-cal td.empty{background:transparent;}
+  .month-cal td small{display:block; font-weight:500; font-size:11px; margin-top:5px; line-height:1.35;}
+  .month-cal td.h{background:#d8e9fc; color:#0b5cab;}
+  .month-cal td.s{background:#e4e1fc; color:#43409e;}
+  .month-cal td.b{background:linear-gradient(135deg, #d8e9fc 50%, #e4e1fc 50%); color:#1d3a5f;}
+  .cal-legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:14px; font-size:13px; color:var(--muted); align-items:center;}
+  .cal-legend .sw{display:inline-block; width:16px; height:16px; border-radius:5px; vertical-align:-3px; margin-right:7px;}
+  @media (max-width: 700px){ .month-cal td{height:56px; padding:6px; font-size:12px;} .month-cal td small{display:none;} }
+
   footer{max-width:1560px; margin:0 auto; padding:36px 22px 56px; font-size:12px; color:var(--muted);
     border-top:1px solid var(--hair); line-height:1.7;}
 
@@ -121,10 +147,16 @@
     <div class="links">
       <a href="#live">Live</a>
       <a href="#committees">Committees</a>
-      <a href="#data">Data</a>
       <a href="#toolkit">Toolkit</a>
+      <a href="#data">Data</a>
+      <a href="#calendar">Calendar</a>
     </div>
-    <span class="clock"><strong id="dcTime">--:--:--</strong> <span id="dcDate">Washington, D.C.</span></span>
+    <div class="clock-wrap">
+      <button class="clock-btn" id="tzBtn" type="button" aria-haspopup="true" aria-expanded="false">
+        <strong id="dcTime">--:--:--</strong> <span id="dcDate">Washington, D.C.</span> <span class="caret">▾</span>
+      </button>
+      <div class="tz-menu" id="tzMenu" role="menu"></div>
+    </div>
   </div>
 </nav>
 
@@ -214,19 +246,6 @@
     </div>
   </section>
 
-  <!-- ======================= LIVE LEGISLATIVE DATA ======================= -->
-  <section id="data">
-    <p class="eyebrow reveal">Legislative data</p>
-    <h2 class="section-title reveal">The day's activity, as it happens.</h2>
-    <p class="section-sub reveal">Live from the Library of Congress API. Nothing hardcoded, nothing simulated.</p>
-
-    <div class="api-panel reveal">
-      <p class="api-note" style="margin-top:0;">Latest bill activity across both chambers, loaded live from api.congress.gov.</p>
-      <div id="apiError" class="err" style="display:none;"></div>
-      <ul id="billList"></ul>
-    </div>
-  </section>
-
   <!-- ======================= STAFFER TOOLKIT ======================= -->
   <section id="toolkit">
     <p class="eyebrow reveal">Toolkit</p>
@@ -293,6 +312,82 @@
     </div>
   </section>
 
+  <!-- ======================= LIVE LEGISLATIVE DATA ======================= -->
+  <section id="data">
+    <p class="eyebrow reveal">Legislative data</p>
+    <h2 class="section-title reveal">The day's activity, as it happens.</h2>
+    <p class="section-sub reveal">The 15 most recently updated bills in Congress, pulled straight from the Library of Congress the moment you load this page — each with its latest floor or committee action and a link to the full bill on Congress.gov.</p>
+
+    <div class="api-panel reveal">
+      <p class="api-note" style="margin-top:0;">Latest bill activity across both chambers, loaded live from api.congress.gov.</p>
+      <div id="apiError" class="err" style="display:none;"></div>
+      <ul id="billList"></ul>
+    </div>
+  </section>
+
+  <!-- ======================= SESSION CALENDAR ======================= -->
+  <section id="calendar">
+    <p class="eyebrow reveal">Calendar</p>
+    <h2 class="section-title reveal">When the chambers are in session.</h2>
+    <p class="section-sub reveal">The most recently updated schedules, straight from each chamber and the Library of Congress.</p>
+
+    <div class="api-panel reveal" style="margin-top:32px;">
+      <h3 style="font-size:17px; font-weight:600; letter-spacing:-.01em;">Sessions of the current Congress</h3>
+      <p class="api-note">Official session dates for each chamber, live from api.congress.gov.</p>
+      <div id="sessError" class="err" style="display:none;"></div>
+      <ul id="sessList" style="list-style:none; margin-top:10px;"></ul>
+    </div>
+
+    <div class="api-panel reveal" style="margin-top:22px;">
+      <h3 style="font-size:17px; font-weight:600; letter-spacing:-.01em;">August 2026 — days in session</h3>
+      <p class="api-note">Scheduled legislative sessions. The Senate met August 3–7; the House is in its August district work period and returns Monday, August 31. Snapshot as of August 12, 2026 ·
+        <a href="https://www.congress.gov/days-in-session" target="_blank" rel="noopener">days-in-session calendars</a></p>
+      <table class="month-cal" aria-label="August 2026 congressional session calendar">
+        <thead>
+          <tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="empty"></td><td class="empty"></td><td class="empty"></td>
+            <td class="empty"></td><td class="empty"></td><td class="empty"></td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td class="s">3<small>Senate</small></td>
+            <td class="s">4<small>Senate</small></td>
+            <td class="s">5<small>Senate</small></td>
+            <td class="s">6<small>Senate</small></td>
+            <td class="s">7<small>Senate</small></td>
+            <td>8</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>10</td>
+            <td>11</td><td>12</td><td>13</td><td>14</td><td>15</td>
+          </tr>
+          <tr>
+            <td>16</td><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td>
+          </tr>
+          <tr>
+            <td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td>
+          </tr>
+          <tr>
+            <td>30</td><td class="h">31<small>House</small></td>
+            <td class="empty"></td><td class="empty"></td><td class="empty"></td>
+            <td class="empty"></td><td class="empty"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="cal-legend">
+        <span><span class="sw" style="background:linear-gradient(135deg, #d8e9fc 50%, #e4e1fc 50%);"></span>House and Senate in session</span>
+        <span><span class="sw" style="background:#d8e9fc;"></span>House only</span>
+        <span><span class="sw" style="background:#e4e1fc;"></span>Senate only</span>
+        <span><span class="sw" style="background:var(--surface);"></span>Neither chamber in session</span>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer>
@@ -305,15 +400,53 @@
 /* ---------- file:// warning (YouTube embeds need a web origin) ---------- */
 if (location.protocol === 'file:') document.getElementById('fileWarning').style.display = 'block';
 
-/* ---------- D.C. clock ---------- */
+/* ---------- Clock with US time-zone picker ---------- */
+const TZS = [
+  ["Eastern","ET","America/New_York","Washington, D.C."],
+  ["Central","CT","America/Chicago","Central time"],
+  ["Mountain","MT","America/Denver","Mountain time"],
+  ["Arizona","MST","America/Phoenix","Arizona (no DST)"],
+  ["Pacific","PT","America/Los_Angeles","Pacific time"],
+  ["Alaska","AKT","America/Anchorage","Alaska time"],
+  ["Hawaii","HST","Pacific/Honolulu","Hawaii time"]
+];
+let tzIdx = 0;
+try { const s = Number(localStorage.getItem('hd_tz')); if (s >= 0 && s < TZS.length) tzIdx = s; } catch(e){}
 function tick(){
+  const [,abbr,zone,place] = TZS[tzIdx];
   const now = new Date();
-  const t = now.toLocaleTimeString('en-US', {timeZone:'America/New_York', hour12:true});
-  const d = now.toLocaleDateString('en-US', {timeZone:'America/New_York', weekday:'long', month:'long', day:'numeric'});
-  document.getElementById('dcTime').textContent = t + ' ET';
-  document.getElementById('dcDate').textContent = '· ' + d + ' · Washington, D.C.';
+  const t = now.toLocaleTimeString('en-US', {timeZone:zone, hour12:true});
+  const d = now.toLocaleDateString('en-US', {timeZone:zone, weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('dcTime').textContent = t + ' ' + abbr;
+  document.getElementById('dcDate').textContent = '· ' + d + ' · ' + place;
 }
 tick(); setInterval(tick, 1000);
+
+const tzBtn = document.getElementById('tzBtn');
+const tzMenu = document.getElementById('tzMenu');
+function buildTzMenu(){
+  tzMenu.innerHTML = '';
+  TZS.forEach(([name,abbr], i)=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = i === tzIdx ? 'sel' : '';
+    b.innerHTML = `<span>${name}</span><span>${abbr}</span>`;
+    b.addEventListener('click', ()=>{
+      tzIdx = i;
+      try { localStorage.setItem('hd_tz', String(i)); } catch(e){}
+      buildTzMenu(); tick();
+      tzMenu.classList.remove('open'); tzBtn.setAttribute('aria-expanded','false');
+    });
+    tzMenu.appendChild(b);
+  });
+}
+buildTzMenu();
+tzBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  const open = tzMenu.classList.toggle('open');
+  tzBtn.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', ()=>{ tzMenu.classList.remove('open'); tzBtn.setAttribute('aria-expanded','false'); });
 
 /* ---------- Subtle motion: reveal on scroll ---------- */
 const io = new IntersectionObserver((entries)=>{
@@ -457,6 +590,34 @@ async function loadBills(){
   }
 }
 loadBills();
+
+/* ---------- Session calendar ---------- */
+async function loadSessions(){
+  const errBox = document.getElementById('sessError');
+  const list = document.getElementById('sessList');
+  list.innerHTML = '<li>Loading from api.congress.gov…</li>';
+  try{
+    const r = await fetch(`https://api.congress.gov/v3/congress/current?format=json&api_key=${CG_KEY}`);
+    if (!r.ok) throw new Error(`API responded ${r.status}`);
+    const data = await r.json();
+    const c = data.congress || {};
+    list.innerHTML = '';
+    const fmt = ds => ds ? new Date(ds + 'T12:00:00').toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : 'TBD';
+    (c.sessions || []).forEach(s=>{
+      const li = document.createElement('li');
+      li.style.cssText = 'padding:10px 0; border-top:1px solid var(--surface); font-size:14px;';
+      li.innerHTML = `<strong>${s.chamber || ''}</strong> — Session ${s.number || ''} of the ${c.name || ''}` +
+        `<div class="meta" style="color:var(--muted); font-size:13px; margin-top:2px;">Convened ${fmt(s.startDate)}${s.endDate ? ' · Adjourned ' + fmt(s.endDate) : ' · Currently in session period'}</div>`;
+      list.appendChild(li);
+    });
+    if (!list.children.length) list.innerHTML = '<li>No session data returned.</li>';
+  }catch(e){
+    list.innerHTML = '';
+    errBox.innerHTML = `Could not load session dates (${e.message}) — see <a href="https://www.congress.gov/days-in-session" target="_blank" rel="noopener">days-in-session calendars</a>.`;
+    errBox.style.display = 'block';
+  }
+}
+loadSessions();
 </script>
 </body>
 </html>
