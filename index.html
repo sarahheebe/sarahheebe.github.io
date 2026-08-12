@@ -21,7 +21,7 @@
   nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(180%) blur(20px);
     -webkit-backdrop-filter:saturate(180%) blur(20px);
     background:rgba(251,251,253,.82); border-bottom:1px solid rgba(0,0,0,.08);}
-  .nav-inner{max-width:1080px; margin:0 auto; display:flex; align-items:center; gap:28px;
+  .nav-inner{max-width:1560px; margin:0 auto; display:flex; align-items:center; gap:28px;
     padding:0 22px; height:52px; font-size:14px;}
   .nav-inner .brand{font-weight:600; letter-spacing:-.01em; color:var(--text); font-size:16px;}
   .nav-inner .links{display:flex; gap:24px;}
@@ -30,14 +30,8 @@
   .nav-inner .clock{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:13px;}
   .nav-inner .clock strong{color:var(--text); font-weight:600;}
 
-  /* ---- Hero ---- */
-  .hero{max-width:840px; margin:0 auto; text-align:center; padding:84px 22px 56px;}
-  .hero h1{font-size:clamp(40px,6.5vw,64px); font-weight:700; letter-spacing:-.02em; line-height:1.06;}
-  .hero p{font-size:clamp(18px,2.4vw,23px); color:var(--muted); margin-top:18px; font-weight:400;
-    letter-spacing:-.01em; max-width:640px; margin-left:auto; margin-right:auto;}
-
   /* ---- Sections ---- */
-  section{max-width:1080px; margin:0 auto; padding:56px 22px;}
+  section{max-width:1560px; margin:0 auto; padding:56px 22px;}
   section + section{border-top:1px solid var(--hair);}
   .eyebrow{font-size:14px; font-weight:600; color:var(--blue); margin-bottom:8px;}
   .section-title{font-size:clamp(28px,4vw,40px); font-weight:600; letter-spacing:-.015em; line-height:1.12;}
@@ -59,11 +53,9 @@
   .srcbar button:hover{background:#e8e8ed;}
   .srcbar button.active{background:var(--text); color:#fff;}
   .srcbar .endbtns{margin-left:auto; display:flex; gap:8px; align-items:center;}
-  .srcbar button.zoom-btn{min-width:32px; font-weight:600;}
   .srcbar a.pop{font-size:13px;}
   .frame-wrap{position:relative; width:100%; aspect-ratio:16/9; background:#000; overflow:hidden;}
   .frame-wrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0; transform-origin:top center;}
-  .stream-foot{padding:14px 22px 18px; font-size:13px; color:var(--muted);}
   .stream-card.theater{grid-column:1 / -1; order:-1;}
 
   /* ---- Cards / grids ---- */
@@ -108,7 +100,7 @@
   #billList .meta{color:var(--muted); font-size:13px; margin-top:2px;}
   .err{color:#c92a2a; font-size:14px; margin-top:10px;}
 
-  footer{max-width:1080px; margin:0 auto; padding:36px 22px 56px; font-size:12px; color:var(--muted);
+  footer{max-width:1560px; margin:0 auto; padding:36px 22px 56px; font-size:12px; color:var(--muted);
     border-top:1px solid var(--hair); line-height:1.7;}
 
   /* ---- Subtle motion ---- */
@@ -136,12 +128,7 @@
   </div>
 </nav>
 
-<div class="hero reveal">
-  <h1>Congress, live.<br>All on one screen.</h1>
-  <p>The House and Senate floors side by side, every committee stream, and the day's legislative data — direct from official sources.</p>
-</div>
-
-<main>
+<main style="padding-top:26px;">
 
   <!-- ======================= FLOOR STREAMS ======================= -->
   <section id="live" style="padding-top:8px;">
@@ -165,8 +152,6 @@
         <div class="srcbar" id="houseSrcBar">
           <button data-src="https://www.youtube.com/embed/videoseries?list=UUqU8qiVHYmLsF0JIMByCTvw" class="active">Clerk YouTube</button>
           <div class="endbtns">
-            <button class="zoom-btn" type="button" data-zoom="-1" title="Zoom video out">−</button>
-            <button class="zoom-btn" type="button" data-zoom="1" title="Zoom video in">+</button>
             <button class="theater-btn" type="button" title="Expand to full page width">Expand</button>
             <a class="pop" href="https://www.youtube.com/USHouseClerk/live" target="_blank" rel="noopener" title="Open source site">↗</a>
           </div>
@@ -176,12 +161,6 @@
             src="https://www.youtube.com/embed/videoseries?list=UUqU8qiVHYmLsF0JIMByCTvw"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
             title="U.S. House floor livestream (Office of the Clerk)"></iframe>
-        </div>
-        <div class="stream-foot">
-          Official source: Office of the Clerk. In session, the live stream is the newest video in this player; off-session it shows the most recent floor proceedings.
-          Direct links: <a href="https://live.house.gov/" target="_blank" rel="noopener">live.house.gov</a> ·
-          <a href="https://www.youtube.com/USHouseClerk/live" target="_blank" rel="noopener">Clerk YouTube</a> ·
-          <a href="https://houselive.gov/" target="_blank" rel="noopener">HouseLive archive</a>
         </div>
       </div>
 
@@ -194,8 +173,6 @@
         <div class="srcbar" id="senateSrcBar">
           <button data-src="https://www.senate.gov/floor/live-floor-proceedings.htm" class="active">Senate.gov stream</button>
           <div class="endbtns">
-            <button class="zoom-btn" type="button" data-zoom="-1" title="Zoom video out">−</button>
-            <button class="zoom-btn" type="button" data-zoom="1" title="Zoom video in">+</button>
             <button class="theater-btn" type="button" title="Expand to full page width">Expand</button>
             <a class="pop" href="https://www.senate.gov/floor/live-floor-proceedings.htm" target="_blank" rel="noopener" title="Open source site">↗</a>
           </div>
@@ -205,11 +182,6 @@
             src="https://www.senate.gov/floor/live-floor-proceedings.htm"
             allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
             title="U.S. Senate floor livestream (Senate Recording Studio)"></iframe>
-        </div>
-        <div class="stream-foot">
-          Official source: Senate Recording Studio via Senate.gov. Streams while the Senate is in session.
-          If this pane is blank, <a href="https://www.senate.gov/floor/live-floor-proceedings.htm" target="_blank" rel="noopener">open the stream directly</a> ·
-          <a href="https://www.senate.gov/legislative/floor_activity_pail.htm" target="_blank" rel="noopener">Floor proceedings &amp; archive</a>
         </div>
       </div>
     </div>
@@ -249,12 +221,7 @@
     <p class="section-sub reveal">Live from the Library of Congress API. Nothing hardcoded, nothing simulated.</p>
 
     <div class="api-panel reveal">
-      <div class="api-row">
-        <input id="apiKey" type="password" placeholder="Paste your free Congress.gov API key">
-        <button id="loadBills">Load latest bill activity</button>
-      </div>
-      <p class="api-note">Get a free key at
-        <a href="https://api.congress.gov/sign-up/" target="_blank" rel="noopener">api.congress.gov/sign-up</a>. The key stays in your browser only.</p>
+      <p class="api-note" style="margin-top:0;">Latest bill activity across both chambers, loaded live from api.congress.gov.</p>
       <div id="apiError" class="err" style="display:none;"></div>
       <ul id="billList"></ul>
     </div>
@@ -368,28 +335,16 @@ function wireSrcBar(barId, frameId){
   const card = bar.closest('.stream-card');
   const frame = document.getElementById(frameId);
   const wrap = frame.parentElement;
-  let z = 1;
   function layout(){
     const vw = Number(frame.dataset.vw || 0);
     if (vw){
-      const s = (wrap.clientWidth / vw) * z;
+      const s = wrap.clientWidth / vw;
       frame.style.width = vw + 'px';
       frame.style.height = Math.ceil(wrap.clientHeight / s) + 'px';
       frame.style.left = '50%';
       frame.style.transform = `translateX(-50%) scale(${s})`;
-    } else {
-      frame.style.width = (100/z) + '%';
-      frame.style.height = (100/z) + '%';
-      frame.style.left = ((1 - 1/z) * -50) + '%';
-      frame.style.transform = `scale(${z})`;
     }
   }
-  bar.querySelectorAll('.zoom-btn').forEach(zb=>{
-    zb.addEventListener('click', ()=>{
-      z = Math.min(3, Math.max(1, z + 0.25 * Number(zb.dataset.zoom)));
-      layout();
-    });
-  });
   tBtn.addEventListener('click', ()=>{
     const on = card.classList.toggle('theater');
     tBtn.textContent = on ? 'Collapse' : 'Expand';
@@ -473,19 +428,15 @@ senateCommittees.forEach(([name, site, hearings])=>{
   sList.appendChild(li);
 });
 
-/* ---------- Congress.gov API (live data, user-supplied free key) ---------- */
-const keyInput = document.getElementById('apiKey');
-try { const saved = localStorage.getItem('cg_api_key'); if (saved) keyInput.value = saved; } catch(e){}
-document.getElementById('loadBills').addEventListener('click', async ()=>{
-  const key = keyInput.value.trim();
+/* ---------- Congress.gov API (live data) ---------- */
+const CG_KEY = 'H8RqvbLbePmVLKi4nukNccO0Wq1VBqSYFhtYtXRK';
+async function loadBills(){
   const errBox = document.getElementById('apiError');
   const list = document.getElementById('billList');
-  errBox.style.display='none'; list.innerHTML='';
-  if (!key){ errBox.textContent='Enter your Congress.gov API key first (free at api.congress.gov/sign-up).'; errBox.style.display='block'; return; }
-  try { localStorage.setItem('cg_api_key', key); } catch(e){}
+  errBox.style.display='none';
   list.innerHTML = '<li>Loading live data from api.congress.gov…</li>';
   try{
-    const r = await fetch(`https://api.congress.gov/v3/bill?format=json&limit=15&sort=updateDate+desc&api_key=${encodeURIComponent(key)}`);
+    const r = await fetch(`https://api.congress.gov/v3/bill?format=json&limit=15&sort=updateDate+desc&api_key=${CG_KEY}`);
     if (!r.ok) throw new Error(`API responded ${r.status}`);
     const data = await r.json();
     list.innerHTML='';
@@ -501,10 +452,11 @@ document.getElementById('loadBills').addEventListener('click', async ()=>{
     if (!list.children.length) list.innerHTML = '<li>No results returned.</li>';
   }catch(e){
     list.innerHTML='';
-    errBox.innerHTML = `Could not reach api.congress.gov from this page (${e.message}). Your key may be invalid, or your network blocks the request — try <a href="https://www.congress.gov/most-viewed-bills" target="_blank" rel="noopener">Congress.gov directly</a>.`;
+    errBox.innerHTML = `Could not reach api.congress.gov (${e.message}) — try <a href="https://www.congress.gov/most-viewed-bills" target="_blank" rel="noopener">Congress.gov directly</a>.`;
     errBox.style.display='block';
   }
-});
+}
+loadBills();
 </script>
 </body>
 </html>
