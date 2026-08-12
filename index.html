@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hill Desk — Capitol Hill Staffer Dashboard</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b23; --panel2:#1c2330; --border:#2a3342;
+    --text:#e8ecf2; --muted:#93a0b4; --accent:#c9a227; --house:#3d7dd8; --senate:#b0413e;
+    --link:#7fb0ff; --good:#3fb950;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.45;}
+  a{color:var(--link); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  header{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 22px; border-bottom:2px solid var(--accent); background:var(--panel);}
+  header h1{font-size:1.25rem; letter-spacing:.5px;}
+  header h1 span{color:var(--accent);}
+  .clock{text-align:right; font-variant-numeric:tabular-nums;}
+  .clock .time{font-size:1.15rem; font-weight:600;}
+  .clock .date{font-size:.8rem; color:var(--muted);}
+  main{max-width:1500px; margin:0 auto; padding:18px 22px 40px;}
+  h2{font-size:1.02rem; text-transform:uppercase; letter-spacing:1.2px; color:var(--accent); margin:28px 0 12px;}
+  h2:first-of-type{margin-top:6px;}
+
+  /* ---- Floor streams ---- */
+  .streams{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width: 980px){ .streams{grid-template-columns:1fr;} }
+  .stream-card{background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+  .stream-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px;}
+  .stream-head .title{font-weight:700; font-size:1.02rem;}
+  .chip{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.8px; padding:3px 9px; border-radius:20px; text-transform:uppercase;}
+  .chip.house{background:var(--house);}
+  .chip.senate{background:var(--senate);}
+  .srcbar{display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px;}
+  .srcbar button{background:var(--panel2); color:var(--muted); border:1px solid var(--border); border-radius:6px;
+    padding:5px 11px; font-size:.78rem; cursor:pointer;}
+  .srcbar button.active{color:var(--text); border-color:var(--accent); background:#242e40;}
+  .srcbar .endbtns{margin-left:auto; display:flex; gap:6px; align-items:center;}
+  .srcbar a.pop{font-size:.78rem; align-self:center;}
+  .srcbar button.theater-btn{border-color:var(--accent); color:var(--text);}
+  .srcbar button.zoom-btn{min-width:30px; font-weight:700;}
+  .stream-card.theater{grid-column:1 / -1; order:-1;}
+  .frame-wrap{overflow:hidden;}
+  .frame-wrap iframe{transform-origin:top center;}
+  .frame-wrap{position:relative; width:100%; aspect-ratio:16/9; background:#000;}
+  .frame-wrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+  .stream-foot{padding:9px 14px; font-size:.78rem; color:var(--muted); border-top:1px solid var(--border);}
+  .stream-foot a{white-space:nowrap;}
+
+  /* ---- Cards / grids ---- */
+  .grid{display:grid; gap:10px;}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  .grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  @media (max-width: 980px){ .grid.cols-3,.grid.cols-2{grid-template-columns:1fr;} }
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:13px 15px;}
+  .card h3{font-size:.92rem; margin-bottom:6px;}
+  .card p{font-size:.8rem; color:var(--muted);}
+
+  /* ---- Committees ---- */
+  .comm-wrap{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width: 980px){ .comm-wrap{grid-template-columns:1fr;} }
+  .comm-col{background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+  .comm-col > .colhead{padding:10px 14px; font-weight:700; border-bottom:1px solid var(--border);}
+  .colhead.house-h{border-left:4px solid var(--house);}
+  .colhead.senate-h{border-left:4px solid var(--senate);}
+  .comm-col ul{list-style:none;}
+  .comm-col li{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 14px; border-bottom:1px solid #202836; font-size:.85rem;}
+  .comm-col li:last-child{border-bottom:none;}
+  .comm-links{display:flex; gap:10px; flex-shrink:0; font-size:.76rem; white-space:nowrap;}
+  .live-tag{color:#ff6b6b; font-weight:700;}
+
+  /* ---- Link hub ---- */
+  .hub .card ul{list-style:none; margin-top:4px;}
+  .hub .card li{padding:3px 0; font-size:.85rem;}
+
+  /* ---- Congress.gov API ---- */
+  .api-panel{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:15px;}
+  .api-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .api-row input{flex:1; min-width:220px; background:var(--panel2); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:7px 10px; font-size:.85rem;}
+  .api-row button{background:var(--accent); color:#14161a; font-weight:700; border:0; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:.83rem;}
+  .api-note{font-size:.76rem; color:var(--muted); margin-top:7px;}
+  #billList{list-style:none; margin-top:12px;}
+  #billList li{padding:8px 0; border-bottom:1px solid #202836; font-size:.86rem;}
+  #billList .meta{color:var(--muted); font-size:.78rem;}
+  .err{color:#ff8f8f; font-size:.83rem; margin-top:8px;}
+  footer{max-width:1500px; margin:0 auto; padding:14px 22px 30px; font-size:.74rem; color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>HILL <span>DESK</span> <small style="font-weight:400;color:var(--muted);font-size:.75rem;">&nbsp;U.S. Congress — one screen</small></h1>
+  <div style="display:flex; gap:26px;">
+    <div class="clock"><div class="time" id="dcTime">--:--:--</div><div class="date" id="dcDate">Washington, D.C.</div></div>
+  </div>
+</header>
+
+<main>
+
+  <div id="fileWarning" style="display:none; background:#3a2a12; border:1px solid var(--accent); border-radius:8px; padding:11px 14px; font-size:.86rem; margin-bottom:14px;">
+    ⚠️ Preview note: this page is open as a local file, and YouTube refuses to play inside pages that have no web
+    address (Error 153). Nothing is wrong with the site — once it's published to any real URL, the House player works
+    for every visitor automatically. This notice never appears on the hosted site.
+  </div>
+
+  <!-- ======================= FLOOR STREAMS ======================= -->
+  <h2>Floor Proceedings — Live</h2>
+  <div class="streams">
+
+    <!-- HOUSE (left) -->
+    <div class="stream-card">
+      <div class="stream-head">
+        <span class="title">U.S. House of Representatives</span>
+        <span class="chip house">House Floor</span>
+      </div>
+      <div class="srcbar" id="houseSrcBar">
+        <button data-src="https://www.youtube.com/embed/videoseries?list=UUqU8qiVHYmLsF0JIMByCTvw" class="active">Clerk YouTube — live &amp; latest floor video</button>
+        <div class="endbtns">
+          <button class="zoom-btn" type="button" data-zoom="-1" title="Zoom video out">−</button>
+          <button class="zoom-btn" type="button" data-zoom="1" title="Zoom video in">+</button>
+          <button class="theater-btn" type="button" title="Expand to full page width">⛶ Expand</button>
+          <a class="pop" href="https://www.youtube.com/USHouseClerk/live" target="_blank" rel="noopener" title="Open source site">↗</a>
+        </div>
+      </div>
+      <div class="frame-wrap">
+        <iframe id="houseFrame"
+          src="https://www.youtube.com/embed/videoseries?list=UUqU8qiVHYmLsF0JIMByCTvw"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+          title="U.S. House floor livestream (Office of the Clerk)"></iframe>
+      </div>
+      <div class="stream-foot">
+        Official source: Office of the Clerk. When the House is in session the live stream is the newest video in this player; off-session it shows the most recent floor proceedings.
+        (live.house.gov blocks embedding on other sites, so it's available as a direct link only:
+        <a href="https://live.house.gov/" target="_blank" rel="noopener">live.house.gov</a> ·
+        <a href="https://www.youtube.com/USHouseClerk/live" target="_blank" rel="noopener">Clerk YouTube</a> ·
+        <a href="https://houselive.gov/" target="_blank" rel="noopener">HouseLive archive</a>)
+      </div>
+    </div>
+
+    <!-- SENATE (right) -->
+    <div class="stream-card">
+      <div class="stream-head">
+        <span class="title">U.S. Senate</span>
+        <span class="chip senate">Senate Floor</span>
+      </div>
+      <div class="srcbar" id="senateSrcBar">
+        <button data-src="https://www.senate.gov/floor/live-floor-proceedings.htm" class="active">Senate.gov floor stream</button>
+        <button data-src="https://floor.senate.gov/ViewPublisher.php?view_id=16">Floor webcast player (floor.senate.gov)</button>
+        <div class="endbtns">
+          <button class="zoom-btn" type="button" data-zoom="-1" title="Zoom video out">−</button>
+          <button class="zoom-btn" type="button" data-zoom="1" title="Zoom video in">+</button>
+          <button class="theater-btn" type="button" title="Expand to full page width">⛶ Expand</button>
+          <a class="pop" href="https://www.senate.gov/floor/live-floor-proceedings.htm" target="_blank" rel="noopener" title="Open source site">↗</a>
+        </div>
+      </div>
+      <div class="frame-wrap">
+        <iframe id="senateFrame"
+          src="https://www.senate.gov/floor/live-floor-proceedings.htm"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+          title="U.S. Senate floor livestream (Senate Recording Studio)"></iframe>
+      </div>
+      <div class="stream-foot">
+        Official source: Senate Recording Studio via Senate.gov. Streams while the Senate is in session.
+        If this pane is blank, use the second source button or
+        <a href="https://floor.senate.gov/" target="_blank" rel="noopener">open the floor webcast ↗</a> ·
+        <a href="https://www.senate.gov/legislative/floor_activity_pail.htm" target="_blank" rel="noopener">Floor proceedings &amp; archive</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= COMMITTEE LIVESTREAMS ======================= -->
+  <h2>Committee Livestreams</h2>
+  <div class="grid cols-3" style="margin-bottom:12px;">
+    <div class="card"><h3><a href="https://docs.house.gov/Committee/Calendar/ByWeek.aspx" target="_blank" rel="noopener">House Committee Repository — this week ↗</a></h3>
+      <p>Official schedule of every House hearing &amp; markup, with links to each meeting's live webcast.</p></div>
+    <div class="card"><h3><a href="https://www.senate.gov/committees/hearings_meetings.htm" target="_blank" rel="noopener">Senate Hearings &amp; Meetings schedule ↗</a></h3>
+      <p>Today's Senate committee hearings; each hearing page carries the committee's live video player.</p></div>
+    <div class="card"><h3><a href="https://www.congress.gov/committee-schedule" target="_blank" rel="noopener">Congress.gov combined committee schedule ↗</a></h3>
+      <p>Both chambers' committee schedules in one calendar view.</p></div>
+  </div>
+
+  <div class="comm-wrap">
+    <!-- House committees -->
+    <div class="comm-col">
+      <div class="colhead house-h">House Committees — hearings stream live on each committee's official YouTube channel</div>
+      <ul id="houseCommList"></ul>
+    </div>
+    <!-- Senate committees -->
+    <div class="comm-col">
+      <div class="colhead senate-h">Senate Committees — hearings stream live on each committee's hearing page (Senate ISVP player)</div>
+      <ul id="senateCommList"></ul>
+    </div>
+  </div>
+
+  <!-- ======================= LIVE LEGISLATIVE DATA ======================= -->
+  <h2>Live Legislative Data (Congress.gov API)</h2>
+  <div class="api-panel">
+    <div class="api-row">
+      <input id="apiKey" type="password" placeholder="Paste your free Congress.gov API key (api.congress.gov — sign up takes 1 minute)">
+      <button id="loadBills">Load latest bill activity</button>
+    </div>
+    <p class="api-note">Data comes live from the Library of Congress API — nothing is hardcoded. Get a free key at
+      <a href="https://api.congress.gov/sign-up/" target="_blank" rel="noopener">api.congress.gov/sign-up</a>. The key is kept in your browser only.</p>
+    <div id="apiError" class="err" style="display:none;"></div>
+    <ul id="billList"></ul>
+  </div>
+
+  <!-- ======================= STAFFER TOOLKIT ======================= -->
+  <h2>Staffer Toolkit</h2>
+  <div class="grid cols-3 hub">
+    <div class="card">
+      <h3>Floor &amp; Schedules</h3>
+      <ul>
+        <li><a href="https://clerk.house.gov/FloorSummary" target="_blank" rel="noopener">House floor summary (Clerk) — live actions</a></li>
+        <li><a href="https://docs.house.gov/floor/" target="_blank" rel="noopener">House: bills this week (docs.house.gov)</a></li>
+        <li><a href="https://www.majorityleader.gov/schedule/" target="_blank" rel="noopener">House daily/weekly leader schedule</a></li>
+        <li><a href="https://www.senate.gov/legislative/floor_activity_pail.htm" target="_blank" rel="noopener">Senate floor proceedings</a></li>
+        <li><a href="https://www.radiotv.senate.gov/" target="_blank" rel="noopener">Senate floor &amp; vote schedule (Radio-TV Gallery)</a></li>
+        <li><a href="https://www.congress.gov/days-in-session" target="_blank" rel="noopener">Days-in-session calendars</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Votes</h3>
+      <ul>
+        <li><a href="https://clerk.house.gov/Votes" target="_blank" rel="noopener">House roll call votes (Clerk)</a></li>
+        <li><a href="https://www.senate.gov/legislative/votes_new.htm" target="_blank" rel="noopener">Senate roll call votes</a></li>
+        <li><a href="https://live.house.gov/" target="_blank" rel="noopener">House FloorCast — votes as they happen</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Legislation &amp; Research</h3>
+      <ul>
+        <li><a href="https://www.congress.gov/" target="_blank" rel="noopener">Congress.gov — bill search</a></li>
+        <li><a href="https://crsreports.congress.gov/" target="_blank" rel="noopener">CRS reports</a></li>
+        <li><a href="https://www.cbo.gov/" target="_blank" rel="noopener">CBO — cost estimates</a></li>
+        <li><a href="https://www.gao.gov/" target="_blank" rel="noopener">GAO reports</a></li>
+        <li><a href="https://www.jct.gov/" target="_blank" rel="noopener">Joint Committee on Taxation</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Records &amp; Documents</h3>
+      <ul>
+        <li><a href="https://www.congress.gov/congressional-record" target="_blank" rel="noopener">Congressional Record (latest)</a></li>
+        <li><a href="https://www.govinfo.gov/" target="_blank" rel="noopener">GPO govinfo</a></li>
+        <li><a href="https://www.federalregister.gov/" target="_blank" rel="noopener">Federal Register</a></li>
+        <li><a href="https://houselive.gov/" target="_blank" rel="noopener">House floor video archive (2009– )</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Members &amp; Directories</h3>
+      <ul>
+        <li><a href="https://clerk.house.gov/Members" target="_blank" rel="noopener">House member information (Clerk)</a></li>
+        <li><a href="https://www.senate.gov/senators/" target="_blank" rel="noopener">Senators &amp; contact</a></li>
+        <li><a href="https://bioguide.congress.gov/" target="_blank" rel="noopener">Biographical directory</a></li>
+        <li><a href="https://clerk.house.gov/committee_info/index.aspx" target="_blank" rel="noopener">House committee rosters</a></li>
+        <li><a href="https://www.senate.gov/committees/membership_assignments.htm" target="_blank" rel="noopener">Senate committee assignments</a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Capitol Operations</h3>
+      <ul>
+        <li><a href="https://ebbs.senate.gov/" target="_blank" rel="noopener">Senate Radio-TV electronic bulletin board</a></li>
+        <li><a href="https://www.aoc.gov/" target="_blank" rel="noopener">Architect of the Capitol</a></li>
+        <li><a href="https://www.uscp.gov/" target="_blank" rel="noopener">U.S. Capitol Police</a></li>
+        <li><a href="https://cha.house.gov/" target="_blank" rel="noopener">Committee on House Administration</a></li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  All floor and committee video comes directly from official congressional sources: the Office of the Clerk of the House (live.house.gov / Clerk YouTube),
+  the Senate Recording Studio (senate.gov / floor.senate.gov), official committee YouTube channels, and Senate committee hearing pages (ISVP).
+  Committee list and channel IDs sourced from official committee websites. No third-party or simulated data.
+</footer>
+
+<script>
+/* ---------- file:// warning (YouTube embeds need a web origin) ---------- */
+if (location.protocol === 'file:') document.getElementById('fileWarning').style.display = 'block';
+
+/* ---------- D.C. clock ---------- */
+function tick(){
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-US', {timeZone:'America/New_York', hour12:false});
+  const d = now.toLocaleDateString('en-US', {timeZone:'America/New_York', weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  document.getElementById('dcTime').textContent = t + ' ET';
+  document.getElementById('dcDate').textContent = d + ' — Washington, D.C.';
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- Stream source switching ---------- */
+function wireSrcBar(barId, frameId){
+  const bar = document.getElementById(barId);
+  bar.querySelectorAll('button[data-src]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      bar.querySelectorAll('button[data-src]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(frameId).src = btn.dataset.src;
+    });
+  });
+  // Theater mode: expand this stream to the full width of the page (and back)
+  const tBtn = bar.querySelector('.theater-btn');
+  const card = bar.closest('.stream-card');
+  const frame = document.getElementById(frameId);
+  // Zoom: magnify the content INSIDE the frame (works even for cross-origin
+  // player pages we can't restyle, e.g. senate.gov). scale(z) with a matching
+  // 1/z layout size keeps the frame filled while making the video itself bigger.
+  let z = 1;
+  function applyZoom(){
+    frame.style.width = (100/z) + '%';
+    frame.style.height = (100/z) + '%';
+    frame.style.left = ((1 - 1/z) * -50) + '%'; // keep content horizontally centered
+    frame.style.transform = `scale(${z})`;
+  }
+  bar.querySelectorAll('.zoom-btn').forEach(zb=>{
+    zb.addEventListener('click', ()=>{
+      z = Math.min(3, Math.max(1, z + 0.25 * Number(zb.dataset.zoom)));
+      applyZoom();
+    });
+  });
+  tBtn.addEventListener('click', ()=>{
+    const on = card.classList.toggle('theater');
+    tBtn.textContent = on ? '⛶ Collapse' : '⛶ Expand';
+    if (on) card.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+}
+wireSrcBar('houseSrcBar','houseFrame');
+wireSrcBar('senateSrcBar','senateFrame');
+
+/* ---------- Committee lists ----------
+   House: official committee YouTube channel IDs (live streams) + official sites.
+   Senate: official committee sites + hearings pages (ISVP live player on each hearing). */
+const houseCommittees = [
+  ["Agriculture","https://agriculture.house.gov","UCOWh2WJxPywHIaccDWb8Mvg"],
+  ["Appropriations","https://appropriations.house.gov","UCMaSlF09S0fpoRshS2t_7XA"],
+  ["Armed Services","https://armedservices.house.gov","UCD506yORW2voSanqEgLOUIQ"],
+  ["Budget","https://budget.house.gov","UCwzia2rpHJkowAXK-IF9E0w"],
+  ["Education & Workforce","https://edworkforce.house.gov","UCqAHNOSUqn0OByR-4vF81FQ"],
+  ["Energy & Commerce","https://energycommerce.house.gov","UCCbD3bkHRcwiBsaL1lWE_QQ"],
+  ["Ethics","https://ethics.house.gov","UCxZOzbhWkBPEimMti0NBvQQ"],
+  ["Financial Services","https://financialservices.house.gov","UCiGw0gRK-daU7Xv4oDMr9Hg"],
+  ["Foreign Affairs","https://foreignaffairs.house.gov","UCXCjgHrMgPEqDvCmPc9BbJA"],
+  ["Homeland Security","https://homeland.house.gov","UC6Vg3_8RRaIVLJFyo7WZfzA"],
+  ["House Administration","https://cha.house.gov","UCTO94zQwJNB_gmud-4IyZXA"],
+  ["Judiciary","https://judiciary.house.gov","UCVvv3JRCVQAl6ovogDum4hA"],
+  ["Natural Resources","https://naturalresources.house.gov","UCB6LGE5-_i-xxtZxk1_SeTg"],
+  ["Oversight & Government Reform","https://oversight.house.gov","UCXSlyao4qkUFiPqghptHtZA"],
+  ["Rules","https://rules.house.gov","UC3LTS2HRaURCmt_kkWorvFw"],
+  ["Science, Space & Technology","https://science.house.gov","UCtoUE3dJ-mLUo5dwGs7hXOw"],
+  ["Small Business","https://smallbusiness.house.gov","UCnYcuO2JQhVbnCR8ltmSacQ"],
+  ["Transportation & Infrastructure","https://transportation.house.gov","UChc8bTPtZgTZDDLJ6UWJgxA"],
+  ["Veterans' Affairs","https://veterans.house.gov","UCvI8xjyh45-XAJbfPcjUdbQ"],
+  ["Ways & Means","https://waysandmeans.house.gov","UCrz_XV52yquSiXvyjdh03Fw"],
+  ["Intelligence (Permanent Select)","https://intelligence.house.gov","UCMF5z6BIrwwQTtcj2cacBPw"],
+  ["Select Cmte on the CCP","https://selectcommitteeontheccp.house.gov",null]
+];
+const senateCommittees = [
+  ["Agriculture, Nutrition & Forestry","https://www.agriculture.senate.gov","https://www.agriculture.senate.gov/hearings"],
+  ["Appropriations","https://www.appropriations.senate.gov","https://www.appropriations.senate.gov/hearings"],
+  ["Armed Services","https://www.armed-services.senate.gov","https://www.armed-services.senate.gov/hearings"],
+  ["Banking, Housing & Urban Affairs","https://www.banking.senate.gov","https://www.banking.senate.gov/hearings"],
+  ["Budget","https://www.budget.senate.gov","https://www.budget.senate.gov/hearings"],
+  ["Commerce, Science & Transportation","https://www.commerce.senate.gov","https://www.commerce.senate.gov/hearings"],
+  ["Energy & Natural Resources","https://www.energy.senate.gov","https://www.energy.senate.gov/hearings"],
+  ["Environment & Public Works","https://www.epw.senate.gov","https://www.epw.senate.gov/public/index.cfm/hearings"],
+  ["Finance","https://www.finance.senate.gov","https://www.finance.senate.gov/hearings"],
+  ["Foreign Relations","https://www.foreign.senate.gov","https://www.foreign.senate.gov/hearings"],
+  ["Health, Education, Labor & Pensions","https://www.help.senate.gov","https://www.help.senate.gov/hearings"],
+  ["Homeland Security & Govt Affairs","https://www.hsgac.senate.gov","https://www.hsgac.senate.gov/hearings"],
+  ["Judiciary","https://www.judiciary.senate.gov","https://www.judiciary.senate.gov/committee-activity/hearings"],
+  ["Rules & Administration","https://www.rules.senate.gov","https://www.rules.senate.gov/hearings"],
+  ["Small Business & Entrepreneurship","https://www.sbc.senate.gov","https://www.sbc.senate.gov/public/index.cfm/hearings"],
+  ["Veterans' Affairs","https://www.veterans.senate.gov","https://www.veterans.senate.gov/hearings"],
+  ["Special Committee on Aging","https://www.aging.senate.gov","https://www.aging.senate.gov/hearings"],
+  ["Select Committee on Ethics","https://www.ethics.senate.gov",null],
+  ["Indian Affairs","https://www.indian.senate.gov","https://www.indian.senate.gov/hearings"],
+  ["Select Committee on Intelligence","https://www.intelligence.senate.gov","https://www.intelligence.senate.gov/hearings"],
+  ["Joint Economic Committee","https://www.jec.senate.gov","https://www.jec.senate.gov/public/index.cfm/hearings"]
+];
+
+const hList = document.getElementById('houseCommList');
+houseCommittees.forEach(([name, site, yt])=>{
+  const li = document.createElement('li');
+  const links = [];
+  if (yt) links.push(`<a class="live-tag" href="https://www.youtube.com/channel/${yt}/live" target="_blank" rel="noopener">▶ Live</a>`,
+                     `<a href="https://www.youtube.com/channel/${yt}/streams" target="_blank" rel="noopener">Streams</a>`);
+  links.push(`<a href="${site}" target="_blank" rel="noopener">Website</a>`);
+  li.innerHTML = `<span>${name}</span><span class="comm-links">${links.join(' ')}</span>`;
+  hList.appendChild(li);
+});
+const sList = document.getElementById('senateCommList');
+senateCommittees.forEach(([name, site, hearings])=>{
+  const li = document.createElement('li');
+  const links = [];
+  if (hearings) links.push(`<a class="live-tag" href="${hearings}" target="_blank" rel="noopener">▶ Hearings</a>`);
+  links.push(`<a href="${site}" target="_blank" rel="noopener">Website</a>`);
+  li.innerHTML = `<span>${name}</span><span class="comm-links">${links.join(' ')}</span>`;
+  sList.appendChild(li);
+});
+
+/* ---------- Congress.gov API (live data, user-supplied free key) ---------- */
+const keyInput = document.getElementById('apiKey');
+try { const saved = localStorage.getItem('cg_api_key'); if (saved) keyInput.value = saved; } catch(e){}
+document.getElementById('loadBills').addEventListener('click', async ()=>{
+  const key = keyInput.value.trim();
+  const errBox = document.getElementById('apiError');
+  const list = document.getElementById('billList');
+  errBox.style.display='none'; list.innerHTML='';
+  if (!key){ errBox.textContent='Enter your Congress.gov API key first (free at api.congress.gov/sign-up).'; errBox.style.display='block'; return; }
+  try { localStorage.setItem('cg_api_key', key); } catch(e){}
+  list.innerHTML = '<li>Loading live data from api.congress.gov…</li>';
+  try{
+    const r = await fetch(`https://api.congress.gov/v3/bill?format=json&limit=15&sort=updateDate+desc&api_key=${encodeURIComponent(key)}`);
+    if (!r.ok) throw new Error(`API responded ${r.status}`);
+    const data = await r.json();
+    list.innerHTML='';
+    (data.bills || []).forEach(b=>{
+      const li = document.createElement('li');
+      const n = `${b.type || ''} ${b.number || ''}`.trim();
+      const cong = b.congress ? `${b.congress}th Congress` : '';
+      const act = b.latestAction ? `${b.latestAction.actionDate || ''} — ${b.latestAction.text || ''}` : '';
+      const url = `https://www.congress.gov/bill/${b.congress}th-congress/${(b.originChamber||'').toLowerCase()==='senate'?'senate-bill':'house-bill'}/${b.number}`;
+      li.innerHTML = `<a href="${url}" target="_blank" rel="noopener"><strong>${n}</strong></a> — ${b.title || ''}<div class="meta">${cong} · Latest action: ${act}</div>`;
+      list.appendChild(li);
+    });
+    if (!list.children.length) list.innerHTML = '<li>No results returned.</li>';
+  }catch(e){
+    list.innerHTML='';
+    errBox.innerHTML = `Could not reach api.congress.gov from this page (${e.message}). Your key may be invalid, or your network blocks the request — try <a href="https://www.congress.gov/most-viewed-bills" target="_blank" rel="noopener">Congress.gov directly</a>.`;
+    errBox.style.display='block';
+  }
+});
+</script>
+</body>
+</html>
